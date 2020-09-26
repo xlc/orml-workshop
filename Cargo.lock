@@ -3280,6 +3280,7 @@ dependencies = [
  "orml-tokens",
  "pallet-aura",
  "pallet-balances",
+ "pallet-exchange",
  "pallet-grandpa",
  "pallet-randomness-collective-flip",
  "pallet-sudo",
@@ -3547,6 +3548,15 @@ dependencies = [
  "serde",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "pallet-exchange"
+version = "2.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
 ]
 
 [[package]]
