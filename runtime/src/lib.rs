@@ -302,6 +302,10 @@ impl orml_currencies::Trait for Runtime {
 	type WeightInfo = ();
 }
 
+impl pallet_exchange::Trait for Runtime {
+	type Event = Event;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -322,6 +326,8 @@ construct_runtime!(
 
 		Currencies: orml_currencies::{Module, Call, Event<T>},
 		Tokens: orml_tokens::{Module, Storage, Event<T>, Config<T>},
+
+		Exchange: pallet_exchange::{Module, Storage, Call, Event},
 	}
 );
 
