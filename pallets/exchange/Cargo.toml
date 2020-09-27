@@ -13,6 +13,7 @@ frame-system = { default-features = false, version = '2.0.1' }
 sp-runtime = { default-features = false, version = '2.0.1' }
 
 orml-traits = { default-features = false, version = '0.3.0' }
+orml-utilities = { default-features = false, version = '0.3.0' }
 
 [features]
 default = ['std']
@@ -22,4 +23,5 @@ std = [
     'frame-system/std',
     'sp-runtime/std',
     'orml-traits/std',
+    'orml-utilities/std'
 ]

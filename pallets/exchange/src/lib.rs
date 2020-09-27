@@ -2,15 +2,16 @@
 
 use codec::{Encode, Decode};
 use frame_support::{
-	decl_event, decl_module, decl_storage, decl_error,
-	Parameter,
+	decl_event, decl_module, decl_storage, decl_error, ensure,
+	Parameter, traits::BalanceStatus,
 };
 use frame_system::ensure_signed;
 use sp_runtime::{
 	DispatchResult, RuntimeDebug,
-	traits::{AtLeast32BitUnsigned, MaybeSerializeDeserialize, Bounded, One, CheckedAdd}
+	traits::{AtLeast32BitUnsigned, MaybeSerializeDeserialize, Bounded, One, CheckedAdd, Zero},
 };
 use orml_traits::{MultiReservableCurrency, MultiCurrency};
+use orml_utilities::with_transaction_result;
 
 pub trait Trait: frame_system::Trait {
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -44,14 +45,18 @@ decl_event!(
 	pub enum Event<T> where
 		<T as Trait>::OrderId,
 		Order = OrderOf<T>,
+		<T as frame_system::Trait>::AccountId,
 	{
 		OrderCreated(OrderId, Order),
+		OrderTaken(AccountId, OrderId, Order),
 	}
 );
 
 decl_error! {
 	pub enum Error for Module<T: Trait> {
 		OrderIdOverflow,
+		InvalidOrderId,
+		InsufficientBalance,
 	}
 }
 
@@ -89,6 +94,25 @@ decl_module! {
 
 				Self::deposit_event(RawEvent::OrderCreated(order_id, order));
 				Ok(())
+			})?;
+		}
+
+		#[weight = 1000]
+		fn take_order(origin, order_id: T::OrderId) {
+			let who = ensure_signed(origin)?;
+
+			Orders::<T>::try_mutate_exists(order_id, |order| -> DispatchResult {
+				let order = order.take().ok_or(Error::<T>::InvalidOrderId)?;
+
+				with_transaction_result(|| {
+					T::Currency::transfer(order.target_currency_id, &who, &order.owner, order.target_amount)?;
+					let val = T::Currency::repatriate_reserved(order.base_currency_id, &order.owner, &who, order.base_amount, BalanceStatus::Free)?;
+					ensure!(val.is_zero(), Error::<T>::InsufficientBalance);
+
+					Self::deposit_event(RawEvent::OrderTaken(who, order_id, order));
+
+					Ok(())
+				})
 			})?;
 		}
 	}
