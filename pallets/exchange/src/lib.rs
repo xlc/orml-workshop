@@ -49,6 +49,7 @@ decl_event!(
 	{
 		OrderCreated(OrderId, Order),
 		OrderTaken(AccountId, OrderId, Order),
+		OrderCancelled(OrderId),
 	}
 );
 
@@ -57,6 +58,7 @@ decl_error! {
 		OrderIdOverflow,
 		InvalidOrderId,
 		InsufficientBalance,
+		NotOwner,
 	}
 }
 
@@ -113,6 +115,21 @@ decl_module! {
 
 					Ok(())
 				})
+			})?;
+		}
+
+		#[weight = 1000]
+		fn cancel_order(origin, order_id: T::OrderId) {
+			let who = ensure_signed(origin)?;
+
+			Orders::<T>::try_mutate_exists(order_id, |order| -> DispatchResult {
+				let order = order.take().ok_or(Error::<T>::InvalidOrderId)?;
+
+				ensure!(order.owner == who, Error::<T>::NotOwner);
+
+				Self::deposit_event(RawEvent::OrderCancelled(order_id));
+
+				Ok(())
 			})?;
 		}
 	}
