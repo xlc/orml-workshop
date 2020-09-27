@@ -9,5 +9,14 @@
     },
     "CurrencyIdOf": "CurrencyId",
     "Amount": "i128",
-    "AmountOf": "Amount"
+    "AmountOf": "Amount",
+    "Order": {
+        "base_currency_id": "CurrencyId",
+        "base_amount": "Compact<Balance>",
+        "target_currency_id": "CurrencyId",
+        "target_amount": "Compact<Balance>",
+        "owner": "AccountId"
+    },
+    "OrderOf": "Order",
+    "OrderId": "u32"
 }
