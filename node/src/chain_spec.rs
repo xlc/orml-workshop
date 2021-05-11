@@ -44,7 +44,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 	properties.insert("tokenSymbol".into(), "TEST".into());
 	properties.insert("tokenDecimals".into(), 15.into());
 
-	let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
+	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
 	Ok(ChainSpec::from_genesis(
 		// Name
@@ -52,7 +52,8 @@ pub fn development_config() -> Result<ChainSpec, String> {
 		// ID
 		"dev",
 		ChainType::Development,
-		move || testnet_genesis(
+        move || {
+            testnet_genesis(
 			wasm_binary,
 			// Initial PoA authorities
 			vec![
@@ -68,7 +69,8 @@ pub fn development_config() -> Result<ChainSpec, String> {
 				get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
 			],
 			true,
-		),
+			)
+		},
 		// Bootnodes
 		vec![],
 		// Telemetry
@@ -83,7 +85,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 }
 
 pub fn local_testnet_config() -> Result<ChainSpec, String> {
-	let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
+	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
 	Ok(ChainSpec::from_genesis(
 		// Name
@@ -91,7 +93,8 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 		// ID
 		"local_testnet",
 		ChainType::Local,
-		move || testnet_genesis(
+		move || {
+			testnet_genesis(
 			wasm_binary,
 			// Initial PoA authorities
 			vec![
@@ -116,7 +119,8 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 				get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
 			],
 			true,
-		),
+			)
+		},
 		// Bootnodes
 		vec![],
 		// Telemetry
