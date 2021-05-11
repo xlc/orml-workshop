@@ -5,10 +5,9 @@ use frame_support::sp_runtime::{
 	traits::{AtLeast32BitUnsigned, Bounded, CheckedAdd, MaybeSerializeDeserialize, One, Zero},
 	RuntimeDebug,
 };
-use frame_support::{traits::BalanceStatus, Parameter};
+use frame_support::{traits::BalanceStatus, Parameter, transactional};
 use frame_system::ensure_signed;
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
-use orml_utilities::with_transaction_result;
 /// Edit this file to define custom logic or remove it if it is not needed.
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// <https://substrate.dev/docs/en/knowledgebase/runtime/frame>
@@ -43,7 +42,7 @@ type OrderOf<T> = Order<CurrencyIdOf<T>, BalanceOf<T>, <T as frame_system::Confi
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
+	use frame_support::{dispatch::DispatchResultWithPostInfo, dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -140,6 +139,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(10_000)]
+		#[transactional]
 		pub fn take_order(
 			origin: OriginFor<T>,
 			order_id: T::OrderId,
@@ -149,26 +149,22 @@ pub mod pallet {
 			Orders::<T>::try_mutate_exists(order_id, |order| -> DispatchResultWithPostInfo {
 				let order = order.take().ok_or(Error::<T>::InvalidOrderId)?;
 
-				with_transaction_result(|| {
-					T::Currency::transfer(
-						order.target_currency_id,
-						&who,
-						&order.owner,
-						order.target_amount,
-					)?;
-					let val = T::Currency::repatriate_reserved(
-						order.base_currency_id,
-						&order.owner,
-						&who,
-						order.base_amount,
-						BalanceStatus::Free,
-					)?;
-					ensure!(val.is_zero(), Error::<T>::InsufficientBalance);
+				T::Currency::transfer(
+					order.target_currency_id,
+					&who,
+					&order.owner,
+					order.target_amount,
+				)?;
+				let val = T::Currency::repatriate_reserved(
+					order.base_currency_id,
+					&order.owner,
+					&who,
+					order.base_amount,
+					BalanceStatus::Free,
+				)?;
+				ensure!(val.is_zero(), Error::<T>::InsufficientBalance);
 
-					Self::deposit_event(Event::OrderTaken(who, order_id, order));
-					Ok(())
-				})
-				.unwrap_or(());
+				Self::deposit_event(Event::OrderTaken(who, order_id, order));
 				Ok(().into())
 			})?;
 			Ok(().into())
@@ -181,13 +177,13 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
-			Orders::<T>::try_mutate_exists(order_id, |order| -> DispatchResultWithPostInfo {
+			Orders::<T>::try_mutate_exists(order_id, |order| -> DispatchResult {
 				let order = order.take().ok_or(Error::<T>::InvalidOrderId)?;
 
 				ensure!(order.owner == who, Error::<T>::NotOwner);
 
 				Self::deposit_event(Event::OrderCancelled(order_id));
-				Ok(().into())
+				Ok(())
 			})?;
 			Ok(().into())
 		}
